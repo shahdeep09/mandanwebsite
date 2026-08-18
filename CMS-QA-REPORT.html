@@ -120,7 +120,7 @@
     <h1>Mandan CMS — Staging Test Report</h1>
     <p class="sub">
       End-to-end test of the staging admin panel and whether its changes reach the staging website.
-      22 findings, each with the screen to open, what goes wrong, and a suggested fix.
+      30 findings, each with the screen to open, what goes wrong, and a suggested fix.
       Tick items off as you verify them — progress is saved in this browser.
     </p>
     <dl class="meta">
@@ -146,11 +146,11 @@
   </div>
 
   <div class="tiles">
-    <div class="tile" style="--tone:var(--p1)"><span class="n">4</span><span class="l"><b>P1 Blocker</b>Editors cannot do the job</span></div>
-    <div class="tile" style="--tone:var(--p2)"><span class="n">7</span><span class="l"><b>P2 High</b>Broken or misleading</span></div>
-    <div class="tile" style="--tone:var(--p3)"><span class="n">9</span><span class="l"><b>P3 Medium</b>Correctness and polish</span></div>
+    <div class="tile" style="--tone:var(--p1)"><span class="n">6</span><span class="l"><b>P1 Blocker</b>Editors cannot do the job</span></div>
+    <div class="tile" style="--tone:var(--p2)"><span class="n">12</span><span class="l"><b>P2 High</b>Broken or misleading</span></div>
+    <div class="tile" style="--tone:var(--p3)"><span class="n">10</span><span class="l"><b>P3 Medium</b>Correctness and polish</span></div>
     <div class="tile" style="--tone:var(--p4)"><span class="n">2</span><span class="l"><b>P4 Low</b>Cosmetic</span></div>
-    <div class="tile" style="--tone:var(--ok)"><span class="n">20</span><span class="l"><b>Confirmed</b>Reproduced or from API</span></div>
+    <div class="tile" style="--tone:var(--ok)"><span class="n">28</span><span class="l"><b>Confirmed</b>Reproduced or from API</span></div>
   </div>
 
   <div class="controls">
@@ -190,6 +190,9 @@
           <li><b>Staging banners</b> are clearly marked on both the CMS and the website.</li>
           <li><b>Draft / Published / Archived</b> tabs and the "items awaiting review" dashboard counter are wired up correctly.</li>
           <li><b>Media picker</b> selection, ordering controls and delete confirmations all behave sensibly.</li>
+          <li><b>Create works end-to-end in 12 of 19 collections</b> — dhyanam, ganam, books, booklist, physicalbooks, pravachanamlist, pravachanamvideos, shortvideos, vachanam, categories, contacts, danam: <code>201</code>, verified via API, cleaned up.</li>
+          <li><b>Multilingual rich-text editor</b> (open → type → Save) and the in-form relation lists (e.g. dhyanamcategories) work in the collections that save correctly.</li>
+          <li><b>Publish → public propagation</b> verified on dhyanam: a published record appears on the unauthenticated content API immediately.</li>
         </ul>
       </div>
     </div>
@@ -205,7 +208,7 @@
       <div class="panel gap">
         <h3>Blocked or not reached</h3>
         <ul>
-          <li><b>Create/edit/delete on the 19 content collections</b> could not be completed — finding 2 blocks it at the form level, and finding 1 blocks adding any new image.</li>
+          <li><b>Edit flow on collection rows</b> — verified on Hero Section only; row-level edit in the 19 collections was not exercised.</li>
           <li>Roles and permissions editing, forms builder submissions, and dashboard drag-to-reorder persistence.</li>
           <li>Mobile/tablet layout of the admin panel.</li>
         </ul>
@@ -216,11 +219,11 @@
   <section class="band">
     <h2><span class="dot" style="--tone:var(--accent)"></span>Suggested order of work</h2>
     <ol class="order">
-      <li><b>1 and 2</b> — the two blockers. Until media upload works and the Publications picker opens, an editor cannot publish a single article. Everything else is secondary.</li>
-      <li><b>3</b> — the two collections returning 500 on every dashboard load.</li>
+      <li><b>23, 1 and 2</b> — the blockers: delete that does not delete, upload that does not upload, and the Publications picker that blocks every article. Until these work, editors cannot manage content.</li>
+      <li><b>3, 24, 25, 26</b> — the server-side failures: the two 500 collections (which also break Shobha's form), the sevaorganizations 500, and the silently swallowed sevaschemes 400.</li>
       <li><b>4</b> — the hero Internal Route default, which can silently point the homepage at a dead end.</li>
       <li><b>5, 6</b> — the user list showing hashes and the collections showing "0 fields": both make admin screens unusable.</li>
-      <li><b>7, 9</b> — environment bleed: staging writing production asset URLs, and staging pointing at production payments and notifications.</li>
+      <li><b>7, 9, 29</b> — environment and exposure: production asset URLs in staging, production payments/notify endpoints, and drafts served by the public API.</li>
       <li><b>10–22</b> — validation, labelling and copy fixes.</li>
     </ol>
   </section>
@@ -275,8 +278,8 @@ const F=[
  fix:"Point both at staging equivalents, or make the base URLs environment-driven rather than compiled in. Until then, treat payment and notification flows in staging as unsafe to exercise.",conf:1},
 
 {id:10,sev:"P2",url:CMS+"/login",repro:"Log in through the CMS UI repeatedly.",
- what:"The CMS intermittently shows <strong>\"Login failed. Please try again.\"</strong> with correct credentials. During the same period the auth API returned <code>200</code> and a valid token for those exact credentials on three consecutive direct calls, so the backend was healthy and there is no lockout.",
- fix:"Look for a race in the login screen — likely the token/response handled before the form state settles, or an unawaited future. Surface the underlying error rather than a generic message.",conf:0},
+ what:"The CMS intermittently shows <strong>\"Login failed. Please try again.\"</strong> with correct credentials — and it happens in bursts: one automated session hit <strong>three consecutive UI login failures</strong> while direct calls to the auth API with the same credentials returned <code>200</code> at the same moments. The backend is healthy; the failure is in the login screen.",
+ fix:"Look for a race in the login screen — likely the token/response handled before the form state settles, or an unawaited future. Surface the underlying error rather than a generic message.",conf:1},
 
 {id:11,sev:"P2",url:CMS+"/category/articles",repro:"Articles → Create Content → click Publish with the form empty. Compare which labels carry an asterisk.",
  what:"Validation enforces <strong>Publications</strong> and <strong>Published Date</strong> as required, but <strong>neither label carries the <code>*</code></strong> that Title and Files do. Editors cannot tell what is mandatory until submission fails.",
@@ -324,7 +327,31 @@ const F=[
 
 {id:22,sev:"P4",url:CMS+"/collections",repro:"Any list screen in the CMS.",
  what:"Collections are listed by their <strong>raw slugs</strong> — <code>ganam</code>, <code>danam</code>, <code>booklist</code>, <code>shobhashorts</code> — while the sidebar uses friendly names (Ganam, Daanam). The two vocabularies do not match, and the slugs also disagree with the website's spellings (\"Gaanam\", \"Daanam\").",
- fix:"Give each collection a display name and use it consistently across sidebar, list screens and breadcrumbs, keeping the slug for URLs only.",conf:1}
+ fix:"Give each collection a display name and use it consistently across sidebar, list screens and breadcrumbs, keeping the slug for URLs only.",conf:1},
+{id:23,sev:"P1",url:CMS+"/category/dhyanam",repro:"Open any content collection → a row's ⋮ menu → Delete → confirm \"Are you sure you want to delete this content?\" → Delete.",
+ what:"<strong>Deleting content does not delete it.</strong> The confirmation completes, the CMS sends <code>PUT /content/dhyanam/14</code> — an update that sets the row's <code>delete</code> flag — and gets <code>200</code>, but the record remains in the CMS list and on the public API. Reproduced three times end-to-end. Every collection schema carries a <code>delete</code> column: this is a soft-delete whose flag <strong>no read path honors</strong>. (Hero Section's delete uses a different endpoint and works.)",
+ fix:"Either make every list/read query — CMS and public — filter soft-deleted rows, or issue a real delete: the API's <code>DELETE /content/{collection}/{id}</code> works correctly (used for test cleanup throughout).",conf:1},
+{id:24,sev:"P1",url:CMS+"/category/sevaorganizations",repro:"Seva → sevaorganizations → Create Content → fill title, description, history, thumbnail → Save.",
+ what:"Create fails with <strong>HTTP 500 <code>INTERNAL_ERROR</code></strong> — and the UI shows <strong>no error at all</strong>, returning to the list as if saved. The editor's work is silently lost, and a Seva organisation cannot be created through the admin panel.",
+ fix:"Fix the server error on <code>POST /content/sevaorganizations</code> (likely the same missing-table/column family as finding 3), and surface non-2xx save responses in the UI.",conf:1},
+{id:25,sev:"P2",url:CMS+"/category/sevaschemes",repro:"Seva → sevaschemes → Create Content → fill everything including Start/End Date → Publish.",
+ what:"The server rejects the save with <strong>HTTP 400</strong> and <strong>the UI shows nothing</strong> — no message, no field highlight (reproduced twice; screenshots show every field visibly filled and accepted, dates as <code>17/08/2026</code>). The form accepts client-side what the server then rejects, and the editor never learns the save failed.",
+ fix:"Align the date/payload serialization with what the server expects, and always surface 4xx save responses with the server's validation details.",conf:1},
+{id:26,sev:"P2",url:CMS+"/category/shobha",repro:"Shobha → Create Content. Watch the two relation panels and then try to Publish.",
+ what:"Shobha events cannot be created: Publish returns <strong>HTTP 400</strong>, and the form's two relation panels show <strong>\"Failed to load event_playlist\"</strong> and <strong>\"Failed to load eventshorts\"</strong> — they load from <code>shobhaplaylist</code> and <code>shobhashorts</code>, the two collections that 500 on every request (finding 3). Finding 3 is therefore not cosmetic: it breaks the Shobha editing workflow.",
+ fix:"Fix the two 500 collections first, then re-test Shobha create; surface the 400 to the editor in the meantime.",conf:1},
+{id:27,sev:"P2",url:CMS+"/category/pravachanam",repro:"Pravachanam → Create Content → fill the form → Save.",
+ what:"Clicking Save produces <strong>no network request and no message of any kind</strong> — the form just sits there. Seen once in a full automated pass; the same driver created records successfully in 12 other collections.",
+ fix:"Check the Save handler for this collection's form — likely a swallowed exception or an unmet hidden requirement with no visible validation.",conf:0},
+{id:28,sev:"P2",url:CMS+"/category/ganam",repro:"Ganam → Create Content → fill everything except the Lyrics rich-text editor → Publish.",
+ what:"When a <strong>required rich-text field is empty, Publish silently does nothing</strong> — no request, no error text anywhere on the page, no scroll-to-field. With Lyrics filled, the identical submission succeeds (<code>201</code>). An editor has no way to discover what is blocking them.",
+ fix:"Validate rich-text required fields like the plain fields: show the \"is required\" message and scroll the first invalid field into view.",conf:1},
+{id:29,sev:"P2",url:API+"/content/dhyanam",repro:"Create a record with status <code>draft</code>, then <code>GET /api/v1/content/dhyanam</code> with no auth header.",
+ what:"<strong>The public content API serves draft records to unauthenticated callers.</strong> A draft created for this test appeared in the anonymous read — the same API the website consumes — while the CMS dashboard promises \"Drafts are not visible on the public site until published\". Unpublished content is readable by anyone who calls the API directly.",
+ fix:"Enforce <code>status = published</code> server-side on all unauthenticated content reads, rather than trusting clients to filter.",conf:1},
+{id:30,sev:"P3",url:CMS+"/category/shortvideos",repro:"Create a record in Short Videos, Vachanam, Categories, Contacts or Daanam (the Save-button collections), then check <code>GET /api/v1/content/&lt;collection&gt;</code>.",
+ what:"These five collections have no draft/publish workflow — just Save. The save returns <code>201</code> and the record appears in the CMS list, but it <strong>never appears on the public content API</strong>, and there is no Publish action to promote it. There appears to be no path for an editor to make this content live.",
+ fix:"Define the publish semantics for status-less collections: either auto-publish on save (and make the public API return them) or give them the same Draft/Publish workflow as the other collections.",conf:1}
 ];
 
 const BANDS=[
