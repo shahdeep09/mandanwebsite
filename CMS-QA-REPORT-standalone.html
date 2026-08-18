@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="End-to-end QA of the Mandan CMS staging admin panel and its effect on the staging website. 30 findings with fixes.">
+<meta name="color-scheme" content="light dark">
+<title>Mandan CMS — Staging QA Report</title>
+</head>
+<body>
+<style>
+  /* --- minimal reset (supplied by the artifact runtime; inlined for standalone use) --- */
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body,h1,h2,h3,h4,p,figure,blockquote,dl,dd{margin:0}
+  ul[class],ol[class]{list-style:none;margin:0;padding:0}
+  img,picture,svg,video{max-width:100%;display:block}
+  input,button,textarea,select{font:inherit;color:inherit}
+  table{border-collapse:collapse}
+  a{color:inherit}
+
+  :root{
+    --ground:#FAF8F5; --surface:#FFFFFF; --surface-2:#F3F0EA;
+    --ink:#1B1815; --ink-2:#4A443D; --muted:#7A736A;
+    --rule:#E3DED4; --rule-strong:#CFC7B9;
+    --accent:#155E6B; --accent-soft:#E2F0F2;
+    --p1:#A32118; --p2:#96590A; --p3:#2F5B93; --p4:#6B655C;
+    --ok:#2E6B44; --ok-soft:#E5F0E8;
+    --shadow:0 1px 2px rgba(27,24,21,.05), 0 8px 24px -12px rgba(27,24,21,.18);
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#131110; --surface:#1C1917; --surface-2:#24201D;
+      --ink:#F2EDE6; --ink-2:#CFC7BC; --muted:#968D82;
+      --rule:#312B26; --rule-strong:#463E37;
+      --accent:#5FBECD; --accent-soft:#11333A;
+      --p1:#F0897E; --p2:#E0A54B; --p3:#89B2E6; --p4:#A79E92;
+      --ok:#7FC298; --ok-soft:#16301F;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#131110; --surface:#1C1917; --surface-2:#24201D;
+    --ink:#F2EDE6; --ink-2:#CFC7BC; --muted:#968D82;
+    --rule:#312B26; --rule-strong:#463E37;
+    --accent:#5FBECD; --accent-soft:#11333A;
+    --p1:#F0897E; --p2:#E0A54B; --p3:#89B2E6; --p4:#A79E92;
+    --ok:#7FC298; --ok-soft:#16301F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px; margin:0 auto; padding:0 24px 96px}
+  header.masthead{border-bottom:1px solid var(--rule); background:var(--surface)}
+  .masthead .wrap{padding-top:40px; padding-bottom:28px}
+  .eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); margin:0 0 14px}
+  h1{font-family:var(--serif); font-weight:600; font-size:clamp(30px,4.2vw,46px); line-height:1.1; letter-spacing:-.015em; margin:0 0 6px; text-wrap:balance}
+  .sub{font-size:17px; color:var(--ink-2); margin:0 0 26px; max-width:64ch}
+  .sub a{color:var(--accent)}
+  .meta{display:grid; gap:1px; background:var(--rule); grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); border:1px solid var(--rule); border-radius:8px; overflow:hidden}
+  .meta div{background:var(--surface); padding:11px 14px}
+  .meta dt{font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:0 0 3px}
+  .meta dd{margin:0; font-size:14px; color:var(--ink)}
+  .caveat{margin:32px 0 0; border:1px solid var(--rule-strong); border-left:3px solid var(--p2); background:var(--surface); border-radius:6px; padding:18px 22px}
+  .caveat h2{font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--p2); margin:0 0 10px; font-weight:600}
+  .caveat ul{margin:0; padding-left:20px}
+  .caveat li{margin:0 0 8px; color:var(--ink-2); font-size:15px}
+  .caveat li:last-child{margin-bottom:0}
+  .caveat strong{color:var(--ink)}
+  .tiles{display:grid; gap:12px; margin:34px 0 8px; grid-template-columns:repeat(auto-fit,minmax(132px,1fr))}
+  .tile{background:var(--surface); border:1px solid var(--rule); border-radius:8px; padding:14px 16px; position:relative; overflow:hidden}
+  .tile::before{content:""; position:absolute; inset:0 auto 0 0; width:3px; background:var(--tone,var(--rule-strong))}
+  .tile .n{font-family:var(--serif); font-size:32px; line-height:1; font-variant-numeric:tabular-nums; color:var(--tone,var(--ink)); display:block; margin-bottom:5px}
+  .tile .l{font-size:12.5px; color:var(--muted); line-height:1.35}
+  .tile .l b{display:block; color:var(--ink-2); font-weight:600; font-size:13px}
+  .controls{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:28px 0 18px; padding:14px 16px; background:var(--surface); border:1px solid var(--rule); border-radius:8px; position:sticky; top:0; z-index:20; box-shadow:var(--shadow)}
+  .controls input[type=search]{flex:1 1 210px; min-width:0; padding:8px 11px; font:inherit; font-size:14px; color:var(--ink); background:var(--ground); border:1px solid var(--rule-strong); border-radius:6px}
+  .chips{display:flex; flex-wrap:wrap; gap:6px}
+  .chip{font:inherit; font-size:12.5px; font-weight:600; cursor:pointer; padding:6px 12px; border-radius:999px; background:var(--surface-2); color:var(--ink-2); border:1px solid var(--rule-strong)}
+  .chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:#fff}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chip[aria-pressed="true"]{color:#0F1416}}
+  :root[data-theme="dark"] .chip[aria-pressed="true"]{color:#0F1416}
+  .progress{margin-left:auto; font-family:var(--mono); font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap}
+  .progress b{color:var(--ok)}
+  .ghost{font:inherit; font-size:12.5px; cursor:pointer; padding:6px 11px; border-radius:6px; background:transparent; color:var(--muted); border:1px solid var(--rule-strong)}
+  .chip:focus-visible,.ghost:focus-visible,input:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  section.band{margin:38px 0 0}
+  .band > h2{font-family:var(--serif); font-size:23px; font-weight:600; letter-spacing:-.01em; margin:0 0 4px; display:flex; align-items:baseline; gap:11px}
+  .band > h2 .dot{width:9px; height:9px; border-radius:50%; background:var(--tone); flex:none}
+  .band > h2 .cnt{font-family:var(--mono); font-size:12px; color:var(--muted); font-weight:400}
+  .band > p.blurb{margin:0 0 16px; color:var(--muted); font-size:14.5px; max-width:72ch}
+  .scroller{overflow-x:auto; border:1px solid var(--rule); border-radius:8px; background:var(--surface)}
+  table{border-collapse:collapse; width:100%; min-width:980px}
+  thead th{text-align:left; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; padding:11px 14px; border-bottom:1px solid var(--rule-strong); background:var(--surface-2); position:sticky; top:0}
+  tbody td{padding:15px 14px; border-bottom:1px solid var(--rule); vertical-align:top; font-size:14.5px; color:var(--ink-2)}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr.done td{opacity:.42}
+  .c-chk{width:40px} .c-id{width:52px} .c-loc{width:24%} .c-what{width:31%} .c-fix{width:31%}
+  .idtag{font-family:var(--mono); font-size:12px; font-weight:600; color:var(--tone); border:1px solid var(--tone); border-radius:5px; padding:2px 6px; display:inline-block; text-decoration:none}
+  input[type=checkbox]{width:17px; height:17px; accent-color:var(--ok); cursor:pointer; margin-top:2px}
+  .url{font-family:var(--mono); font-size:12.5px; color:var(--accent); word-break:break-all; display:inline-block; margin-bottom:6px}
+  .url:hover{text-decoration:underline}
+  .repro{display:block; color:var(--muted); font-size:13px; line-height:1.5}
+  td.c-what strong{color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:12.5px; background:var(--surface-2); border:1px solid var(--rule); border-radius:4px; padding:1px 4px; word-break:break-all}
+  .conf{display:inline-block; margin-top:9px; font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; padding:2px 7px; border-radius:4px}
+  .conf.y{background:var(--ok-soft); color:var(--ok)}
+  .conf.n{background:#FBF0DC; color:var(--p2)}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .conf.n{background:#372711}}
+  :root[data-theme="dark"] .conf.n{background:#372711}
+  .cols{display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); margin-top:16px}
+  .panel{background:var(--surface); border:1px solid var(--rule); border-radius:8px; padding:20px 22px}
+  .panel h3{font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; margin:0 0 12px; color:var(--muted); font-weight:600}
+  .panel ul{margin:0; padding-left:18px}
+  .panel li{margin-bottom:9px; font-size:14.5px; color:var(--ink-2)}
+  .panel li:last-child{margin-bottom:0}
+  .panel li b{color:var(--ink)}
+  .panel.good{border-left:3px solid var(--ok)}
+  .panel.gap{border-left:3px solid var(--muted)}
+  ol.order{counter-reset:o; list-style:none; padding:0; margin:16px 0 0; display:grid; gap:10px}
+  ol.order li{counter-increment:o; background:var(--surface); border:1px solid var(--rule); border-radius:8px; padding:14px 18px 14px 52px; position:relative; font-size:14.5px; color:var(--ink-2)}
+  ol.order li::before{content:counter(o); position:absolute; left:16px; top:13px; font-family:var(--mono); font-size:12px; font-weight:600; color:#fff; background:var(--accent); width:21px; height:21px; border-radius:50%; display:grid; place-items:center}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) ol.order li::before{color:#0F1416}}
+  :root[data-theme="dark"] ol.order li::before{color:#0F1416}
+  ol.order li b{color:var(--ink)}
+  footer.foot{margin-top:52px; padding-top:20px; border-top:1px solid var(--rule); color:var(--muted); font-size:13px}
+  .empty{padding:36px; text-align:center; color:var(--muted); font-size:15px; display:none}
+  @media (max-width:640px){.wrap{padding:0 16px 64px} .controls{position:static} .progress{margin-left:0; width:100%}}
+  @media print{.controls{display:none} tbody tr{break-inside:avoid} .scroller{overflow:visible; border:0} table{min-width:0}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+
+<header class="masthead">
+  <div class="wrap">
+    <p class="eyebrow">CMS + Frontend integration QA · Staging · 17 August 2026</p>
+    <h1>Mandan CMS — Staging Test Report</h1>
+    <p class="sub">
+      End-to-end test of the staging admin panel and whether its changes reach the staging website.
+      30 findings, each with the screen to open, what goes wrong, and a suggested fix.
+      Tick items off as you verify them — progress is saved in this browser.
+    </p>
+    <dl class="meta">
+      <div><dt>Admin panel</dt><dd>mandan-cms-staging</dd></div>
+      <div><dt>Website</dt><dd>mandan-parivar-frontend-staging</dd></div>
+      <div><dt>Signed in as</dt><dd>staging.admin (super admin)</dd></div>
+      <div><dt>Collections</dt><dd>19</dd></div>
+      <div><dt>CMS version</dt><dd>Mandan CMS v1.0.0</dd></div>
+    </dl>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="caveat">
+    <h2>Scope and ground rules observed</h2>
+    <ul>
+      <li><strong>Payments were not tested</strong>, at your instruction. <strong>No notification was ever sent</strong> — the Articles form has a "Send Notification" checkbox, and no record was ever saved with it enabled.</li>
+      <li><strong>Only records I created myself were edited or deleted.</strong> Your existing staging content was left untouched. Every test record has been removed.</li>
+      <li><strong>Two findings are marked "needs check"</strong> — an intermittent login failure and a hero field behaviour I saw once. Everything else was reproduced or read directly from the API.</li>
+      <li>Rendering ran on software WebGL, so <strong>timings are worst-case</strong>. All findings below are about behaviour, not speed.</li>
+    </ul>
+  </div>
+
+  <div class="tiles">
+    <div class="tile" style="--tone:var(--p1)"><span class="n">6</span><span class="l"><b>P1 Blocker</b>Editors cannot do the job</span></div>
+    <div class="tile" style="--tone:var(--p2)"><span class="n">12</span><span class="l"><b>P2 High</b>Broken or misleading</span></div>
+    <div class="tile" style="--tone:var(--p3)"><span class="n">10</span><span class="l"><b>P3 Medium</b>Correctness and polish</span></div>
+    <div class="tile" style="--tone:var(--p4)"><span class="n">2</span><span class="l"><b>P4 Low</b>Cosmetic</span></div>
+    <div class="tile" style="--tone:var(--ok)"><span class="n">28</span><span class="l"><b>Confirmed</b>Reproduced or from API</span></div>
+  </div>
+
+  <div class="controls">
+    <input type="search" id="q" placeholder="Search findings, screens, fixes…" aria-label="Search findings">
+    <div class="chips" id="chips">
+      <button class="chip" data-sev="P1" aria-pressed="false">P1</button>
+      <button class="chip" data-sev="P2" aria-pressed="false">P2</button>
+      <button class="chip" data-sev="P3" aria-pressed="false">P3</button>
+      <button class="chip" data-sev="P4" aria-pressed="false">P4</button>
+      <button class="chip" data-sev="unchecked" aria-pressed="false">Open only</button>
+    </div>
+    <button class="ghost" id="reset">Reset ticks</button>
+    <span class="progress" id="prog"></span>
+  </div>
+
+  <div id="bands"></div>
+  <p class="empty" id="empty">Nothing matches that filter.</p>
+
+  <section class="band">
+    <h2><span class="dot" style="--tone:var(--ok)"></span>Verified working</h2>
+    <p class="blurb">Tested and correct — recorded so it isn't re-tested.</p>
+    <div class="cols">
+      <div class="panel good">
+        <h3>Hero Section — full cycle passes</h3>
+        <ul>
+          <li><b>Create</b> → <code>201</code>, item appears in the CMS list and in the public API within seconds.</li>
+          <li><b>Edit</b> → <code>200 /hero-section/5</code>, new title reflected immediately.</li>
+          <li><b>Delete</b> → confirmation dialog naming the item, <code>200</code>, removed from both the CMS list and the public API.</li>
+          <li><b>Frontend propagation</b> → the new slide and its CTA rendered on the staging website without a redeploy.</li>
+        </ul>
+      </div>
+      <div class="panel good">
+        <h3>Other things that work</h3>
+        <ul>
+          <li><b>Form validation</b> is genuinely good — empty submits are blocked per-field ("Title is required", "Published Date is required") and <b>no network write is attempted</b>.</li>
+          <li><b>Auth API</b> is solid: no user enumeration (unknown user and wrong password return an identical 401), and no lockout under repeated attempts.</li>
+          <li><b>Staging banners</b> are clearly marked on both the CMS and the website.</li>
+          <li><b>Draft / Published / Archived</b> tabs and the "items awaiting review" dashboard counter are wired up correctly.</li>
+          <li><b>Media picker</b> selection, ordering controls and delete confirmations all behave sensibly.</li>
+          <li><b>Create works end-to-end in 12 of 19 collections</b> — dhyanam, ganam, books, booklist, physicalbooks, pravachanamlist, pravachanamvideos, shortvideos, vachanam, categories, contacts, danam: <code>201</code>, verified via API, cleaned up.</li>
+          <li><b>Multilingual rich-text editor</b> (open → type → Save) and the in-form relation lists (e.g. dhyanamcategories) work in the collections that save correctly.</li>
+          <li><b>Publish → public propagation</b> verified on dhyanam: a published record appears on the unauthenticated content API immediately.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <h2><span class="dot" style="--tone:var(--muted)"></span>Not covered</h2>
+    <div class="cols">
+      <div class="panel gap">
+        <h3>Excluded by instruction</h3>
+        <ul><li>Payments, orders and donation checkout.</li><li>Notification sending (the config issue is reported as finding 9).</li><li>Editing or deleting your pre-existing staging content.</li></ul>
+      </div>
+      <div class="panel gap">
+        <h3>Blocked or not reached</h3>
+        <ul>
+          <li><b>Edit flow on collection rows</b> — verified on Hero Section only; row-level edit in the 19 collections was not exercised.</li>
+          <li>Roles and permissions editing, forms builder submissions, and dashboard drag-to-reorder persistence.</li>
+          <li>Mobile/tablet layout of the admin panel.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <h2><span class="dot" style="--tone:var(--accent)"></span>Suggested order of work</h2>
+    <ol class="order">
+      <li><b>23, 1 and 2</b> — the blockers: delete that does not delete, upload that does not upload, and the Publications picker that blocks every article. Until these work, editors cannot manage content.</li>
+      <li><b>3, 24, 25, 26</b> — the server-side failures: the two 500 collections (which also break Shobha's form), the sevaorganizations 500, and the silently swallowed sevaschemes 400.</li>
+      <li><b>4</b> — the hero Internal Route default, which can silently point the homepage at a dead end.</li>
+      <li><b>5, 6</b> — the user list showing hashes and the collections showing "0 fields": both make admin screens unusable.</li>
+      <li><b>7, 9, 29</b> — environment and exposure: production asset URLs in staging, production payments/notify endpoints, and drafts served by the public API.</li>
+      <li><b>10–22</b> — validation, labelling and copy fixes.</li>
+    </ol>
+  </section>
+
+  <footer class="foot">
+    Tested with Playwright 1.56 driving Chromium against the live staging deployments. Both apps are Flutter Web on the
+    CanvasKit renderer, so elements were located through the Flutter semantics tree and clicked by coordinate, then
+    verified from screenshots and from the network layer. Ticks are stored locally in this browser only.
+  </footer>
+</div>
+
+<script>
+const CMS='https://mandan-cms-staging.appteam-mandanparivar.workers.dev/#';
+const FE='https://mandan-parivar-frontend-staging.appteam-mandanparivar.workers.dev';
+const API='https://data-management-staging.appteam-mandanparivar.workers.dev/api/v1';
+
+const F=[
+{id:1,sev:"P1",url:CMS+"/media-library",repro:"Media Library → Upload Files → Select Files to Upload → choose any image. Then reload the page.",
+ what:"<strong>Upload is completely non-functional.</strong> The chosen file appears in the grid as though it uploaded, no error is shown — but <strong>zero network requests are made</strong> (captured with a full request listener), and the file is gone on reload. The count stays at 18 files before and after. Because a thumbnail is a required field on nearly every content form, <strong>this alone blocks most content creation.</strong>",
+ fix:"Wire the file picker's onChange to the upload endpoint — currently it only updates local state. Add an upload progress and error state, and never show a file in the grid until the server confirms it. A failed upload must surface an error, not a silent success.",conf:1},
+
+{id:2,sev:"P1",url:CMS+"/category/articles",repro:"Articles → Create Content → fill Title, Tags, pick a file → click the <em>Publications</em> dropdown.",
+ what:"The <strong>Publications</strong> dropdown renders with a chevron but <strong>clicking it opens nothing</strong> — no menu, no dialog, no options (reproduced twice; confirmed by screenshot and by dumping the accessibility tree before and after the click). Publish then fails with <em>\"Publications is required\"</em>. <strong>An article therefore cannot be created through the admin panel at all.</strong>",
+ fix:"Fix the Publications relation picker so it loads and displays its options. Given <code>/api/v1/collections</code> returns an empty <code>fields</code> array for every collection (see 6), the two are likely the same root cause — the field/relation metadata never reaches the client.",conf:1},
+
+{id:3,sev:"P1",url:API+"/content/shobhaplaylist",repro:"Open any CMS screen and watch the network tab; or call the URL directly.",
+ what:"<code>/content/shobhaplaylist</code> and <code>/content/shobhashorts</code> return <strong>HTTP 500 <code>INTERNAL_ERROR</code> unconditionally</strong> — with or without query parameters. Both are registered in <code>/collections</code>, so the CMS requests them on <strong>every dashboard load</strong> and the calls always fail. 2 of 19 collections are entirely unreachable.",
+ fix:"Check that the backing tables (<code>content_shobhaplaylist</code>, <code>content_shobhashorts</code>) exist and match their collection definitions — this signature usually means a missing table or column. Return a 404 rather than a 500 for a collection with no backing table, so the dashboard degrades instead of erroring.",conf:1},
+
+{id:4,sev:"P1",url:CMS+"/hero-section",repro:"Hero Section → Add Carousel Item. Note the <em>Internal Route</em> switch is <strong>ON by default</strong>. Save an external URL (e.g. a YouTube link) with it left on, then click that slide's CTA on the website.",
+ what:"An external URL saved with <em>Internal Route</em> on makes the website strip the host and route internally. I created a slide with a YouTube link and the app resolved it to <code>/watch?v=…</code> — which I confirmed renders <strong>\"Page not found\"</strong> on the staging site. <strong>A hero slide configured this way sends every visitor on the homepage to a dead end</strong>, and nothing in the CMS warns you.",
+ fix:"Default the switch to OFF. Validate on save: if the URL host is external, Internal Route must be off (or auto-disable it and explain why). Ideally show a resolved-destination preview before saving.",conf:1},
+
+{id:5,sev:"P2",url:CMS+"/users",repro:"Users &amp; Access Control → App Users tab.",
+ what:"Every user row shows a <strong>raw 64-character hex hash</strong> as the name, with a second hash beneath it. Not one user is identifiable — an admin cannot find, support or moderate anyone. Presumably hashed or encrypted PII being rendered straight into the list.",
+ fix:"Render the decrypted display name and email (or phone). If the values are hashed at rest and cannot be reversed, store a searchable display field alongside them; a list of hashes has no operational use.",conf:1},
+
+{id:6,sev:"P2",url:CMS+"/collections",repro:"Collections screen; also <code>GET /api/v1/collections?populate=*</code>.",
+ what:"All <strong>19 collections show \"0 fields\"</strong>, and the API returns an empty <code>fields</code> array for each even with <code>?populate=*</code>. The schema/field manager is therefore unusable, and this is the likely root cause of finding 2.",
+ fix:"Fix <code>populate</code> on the collections endpoint so field definitions are returned and the relation pickers that depend on them can render.",conf:1},
+
+{id:7,sev:"P2",url:CMS+"/media-library",repro:"Pick any media item for a hero slide, save, then read <code>GET /api/v1/hero-section</code>.",
+ what:"The <strong>staging media library serves production asset URLs</strong>. A thumbnail I selected in staging was stored as <code>https://files.prodapi.mandanparivar.com/images/dhyanam_1.webp</code>, and the staging website then loaded that image from production. Staging content depends on production storage — and a delete in production would break staging.",
+ fix:"Point the staging media library at the staging bucket (the pre-existing item correctly uses <code>pub-…r2.dev</code>). Add a guard that rejects cross-environment asset hosts on write.",conf:1},
+
+{id:8,sev:"P2",url:CMS+"/hero-section",repro:"Open any create form, submit empty to trigger errors, then type into the fields.",
+ what:"<strong>Validation errors never clear as you type.</strong> \"Title is required\" stays in red beneath a field that already contains text, and the same for Link. Errors only re-evaluate on submit, so the form keeps accusing the editor of mistakes they have already fixed.",
+ fix:"Re-validate on change/blur and clear the field's error as soon as it becomes valid.",conf:1},
+
+{id:9,sev:"P2",url:FE,repro:"Inspect the staging frontend bundle for API hosts.",
+ what:"The staging website points its data and auth at staging correctly, but <strong>payments and notifications point at production</strong>: <code>payments.prodapi.mandanparivar.com</code> and <code>notify.prodapi.mandanparivar.com</code>. A donation test in staging could reach the real payment service, and any notification send could reach real users' devices.",
+ fix:"Point both at staging equivalents, or make the base URLs environment-driven rather than compiled in. Until then, treat payment and notification flows in staging as unsafe to exercise.",conf:1},
+
+{id:10,sev:"P2",url:CMS+"/login",repro:"Log in through the CMS UI repeatedly.",
+ what:"The CMS intermittently shows <strong>\"Login failed. Please try again.\"</strong> with correct credentials — and it happens in bursts: one automated session hit <strong>three consecutive UI login failures</strong> while direct calls to the auth API with the same credentials returned <code>200</code> at the same moments. The backend is healthy; the failure is in the login screen.",
+ fix:"Look for a race in the login screen — likely the token/response handled before the form state settles, or an unawaited future. Surface the underlying error rather than a generic message.",conf:1},
+
+{id:11,sev:"P2",url:CMS+"/category/articles",repro:"Articles → Create Content → click Publish with the form empty. Compare which labels carry an asterisk.",
+ what:"Validation enforces <strong>Publications</strong> and <strong>Published Date</strong> as required, but <strong>neither label carries the <code>*</code></strong> that Title and Files do. Editors cannot tell what is mandatory until submission fails.",
+ fix:"Mark every enforced field with the required indicator, or stop enforcing the ones that are genuinely optional. Keep the marker and the validation rule generated from the same schema.",conf:1},
+
+{id:12,sev:"P3",url:CMS+"/mandan-parivar",repro:"Dashboard → ARTICLES tab (and the other content tabs).",
+ what:"Linked content titles render with <strong>raw i18n map syntax leaking into the UI</strong>, e.g. <code>આપણી સફળતા પાછળની દોટ… {en: આપણી સફળતા…}</code>. The multilingual value is being string-interpolated instead of resolved to the active locale.",
+ fix:"Resolve multilingual fields to the current admin locale before display, with a fallback chain (en → hi → gu) rather than printing the map.",conf:1},
+
+{id:13,sev:"P3",url:CMS+"/category/articles",repro:"Open Articles. The Draft tab is selected by default.",
+ what:"The empty state reads <em>\"No content found — Create your first content item to get started\"</em> while the tab strip alongside it shows <strong>Published (3)</strong>. Telling an editor to create their first item when the collection already has content is misleading.",
+ fix:"Scope the empty-state copy to the selected tab — \"No drafts\" — and only use the first-run wording when the collection is genuinely empty.",conf:1},
+
+{id:14,sev:"P3",url:CMS+"/hero-section",repro:"Create a hero item with a distinctive Title, then look at the website's hero.",
+ what:"<strong>Title is required in the CMS but never appears on the website.</strong> My test slide's title was absent from the rendered hero and from its accessibility tree, while the button text I set did appear — the visible headline is baked into the banner image. Editors are filling a mandatory field that users never see.",
+ fix:"If Title is only an internal label, rename it \"Internal name\" and say so in help text. If it is meant to display, render it over the banner — which would also fix the mobile text-legibility problem in the frontend report.",conf:0},
+
+{id:15,sev:"P3",url:CMS+"/hero-section",repro:"Create or edit a carousel item and watch for confirmation.",
+ what:"There is <strong>no success confirmation</strong> after create or edit — no toast, no inline message. The list refreshes, but on a slow connection the editor has no signal that the save actually succeeded, which invites duplicate submissions.",
+ fix:"Show a toast on success and on failure. Given finding 1 fails silently, an explicit success signal matters more than usual here.",conf:1},
+
+{id:16,sev:"P3",url:CMS+"/hero-section",repro:"Create a carousel item → Select Thumbnail.",
+ what:"The media picker offers <strong>no way to upload</strong> — only search and pick from existing files. To add an image the editor must abandon the form, go to Media Library, upload, and start again (and today that upload silently fails, per finding 1).",
+ fix:"Add an Upload tab or drop zone inside the picker that returns the newly uploaded file straight into the field.",conf:1},
+
+{id:17,sev:"P3",url:CMS+"/hero-section",repro:"Look at the existing Position 1 item's link.",
+ what:"The pre-existing staging hero item links to <code>https://dev.mandanparivar.com/shala/pravachanam/7/1</code> — a <strong>third environment</strong> (dev), from staging content, flagged as an internal route. It happens to work because the app strips the host, but the stored data is wrong and would break anything that uses the URL literally.",
+ fix:"Store internal links as paths (<code>/shala/pravachanam/7/1</code>), not absolute URLs. Validate on save that an internal route has no host.",conf:1},
+
+{id:18,sev:"P3",url:CMS+"/hero-section",repro:"With only Position 1 in use, create an item and choose Position 3.",
+ what:"The form <strong>allows a gap in the carousel ordering</strong> — I created Position 3 while Position 2 did not exist, and it saved without warning. Ordering is then implicit and fragile.",
+ fix:"Either offer only the next contiguous position, or normalise positions server-side after each write so they stay 1..n.",conf:1},
+
+{id:19,sev:"P3",url:CMS+"/category/articles",repro:"Articles → Create Content → Description → click the expand icon on any language box.",
+ what:"The Description field opens a <strong>full-screen Rich Text Editor overlay that covers the entire form</strong>, including the Publish and Save as Draft buttons. There is a Save in the overlay's own bar, but the transition is abrupt and it is easy to lose your place in a long form.",
+ fix:"Use a modal sized to the content with a visible backdrop, or an inline expanding editor, so the editor keeps context. Confirm before discarding on close.",conf:1},
+
+{id:20,sev:"P3",url:CMS+"/media-library",repro:"Media Library with 18 files present.",
+ what:"The library has <strong>no pagination, sorting or type/size filtering beyond the four format tabs</strong>. With 18 files it is fine; as the library grows past a few hundred, picking the right thumbnail becomes impractical.",
+ fix:"Add pagination or lazy loading, sort by date/name/size, and filter by collection usage. Worth doing before the library grows.",conf:1},
+
+{id:21,sev:"P4",url:CMS+"/category/articles",repro:"Articles → Create Content → scroll to Send Notification.",
+ what:"The <strong>Send Notification</strong> checkbox sits inline with ordinary fields, with no warning about what it does or who receives it. Combined with finding 9 (notifications point at production), an editor could push to real users from staging with a single stray click.",
+ fix:"Move it into a clearly-labelled section, add help text naming the audience, and require an explicit confirmation step before a send.",conf:1},
+
+{id:22,sev:"P4",url:CMS+"/collections",repro:"Any list screen in the CMS.",
+ what:"Collections are listed by their <strong>raw slugs</strong> — <code>ganam</code>, <code>danam</code>, <code>booklist</code>, <code>shobhashorts</code> — while the sidebar uses friendly names (Ganam, Daanam). The two vocabularies do not match, and the slugs also disagree with the website's spellings (\"Gaanam\", \"Daanam\").",
+ fix:"Give each collection a display name and use it consistently across sidebar, list screens and breadcrumbs, keeping the slug for URLs only.",conf:1},
+{id:23,sev:"P1",url:CMS+"/category/dhyanam",repro:"Open any content collection → a row's ⋮ menu → Delete → confirm \"Are you sure you want to delete this content?\" → Delete.",
+ what:"<strong>Deleting content does not delete it.</strong> The confirmation completes, the CMS sends <code>PUT /content/dhyanam/14</code> — an update that sets the row's <code>delete</code> flag — and gets <code>200</code>, but the record remains in the CMS list and on the public API. Reproduced three times end-to-end. Every collection schema carries a <code>delete</code> column: this is a soft-delete whose flag <strong>no read path honors</strong>. (Hero Section's delete uses a different endpoint and works.)",
+ fix:"Either make every list/read query — CMS and public — filter soft-deleted rows, or issue a real delete: the API's <code>DELETE /content/{collection}/{id}</code> works correctly (used for test cleanup throughout).",conf:1},
+{id:24,sev:"P1",url:CMS+"/category/sevaorganizations",repro:"Seva → sevaorganizations → Create Content → fill title, description, history, thumbnail → Save.",
+ what:"Create fails with <strong>HTTP 500 <code>INTERNAL_ERROR</code></strong> — and the UI shows <strong>no error at all</strong>, returning to the list as if saved. The editor's work is silently lost, and a Seva organisation cannot be created through the admin panel.",
+ fix:"Fix the server error on <code>POST /content/sevaorganizations</code> (likely the same missing-table/column family as finding 3), and surface non-2xx save responses in the UI.",conf:1},
+{id:25,sev:"P2",url:CMS+"/category/sevaschemes",repro:"Seva → sevaschemes → Create Content → fill everything including Start/End Date → Publish.",
+ what:"The server rejects the save with <strong>HTTP 400</strong> and <strong>the UI shows nothing</strong> — no message, no field highlight (reproduced twice; screenshots show every field visibly filled and accepted, dates as <code>17/08/2026</code>). The form accepts client-side what the server then rejects, and the editor never learns the save failed.",
+ fix:"Align the date/payload serialization with what the server expects, and always surface 4xx save responses with the server's validation details.",conf:1},
+{id:26,sev:"P2",url:CMS+"/category/shobha",repro:"Shobha → Create Content. Watch the two relation panels and then try to Publish.",
+ what:"Shobha events cannot be created: Publish returns <strong>HTTP 400</strong>, and the form's two relation panels show <strong>\"Failed to load event_playlist\"</strong> and <strong>\"Failed to load eventshorts\"</strong> — they load from <code>shobhaplaylist</code> and <code>shobhashorts</code>, the two collections that 500 on every request (finding 3). Finding 3 is therefore not cosmetic: it breaks the Shobha editing workflow.",
+ fix:"Fix the two 500 collections first, then re-test Shobha create; surface the 400 to the editor in the meantime.",conf:1},
+{id:27,sev:"P2",url:CMS+"/category/pravachanam",repro:"Pravachanam → Create Content → fill the form → Save.",
+ what:"Clicking Save produces <strong>no network request and no message of any kind</strong> — the form just sits there. Seen once in a full automated pass; the same driver created records successfully in 12 other collections.",
+ fix:"Check the Save handler for this collection's form — likely a swallowed exception or an unmet hidden requirement with no visible validation.",conf:0},
+{id:28,sev:"P2",url:CMS+"/category/ganam",repro:"Ganam → Create Content → fill everything except the Lyrics rich-text editor → Publish.",
+ what:"When a <strong>required rich-text field is empty, Publish silently does nothing</strong> — no request, no error text anywhere on the page, no scroll-to-field. With Lyrics filled, the identical submission succeeds (<code>201</code>). An editor has no way to discover what is blocking them.",
+ fix:"Validate rich-text required fields like the plain fields: show the \"is required\" message and scroll the first invalid field into view.",conf:1},
+{id:29,sev:"P2",url:API+"/content/dhyanam",repro:"Create a record with status <code>draft</code>, then <code>GET /api/v1/content/dhyanam</code> with no auth header.",
+ what:"<strong>The public content API serves draft records to unauthenticated callers.</strong> A draft created for this test appeared in the anonymous read — the same API the website consumes — while the CMS dashboard promises \"Drafts are not visible on the public site until published\". Unpublished content is readable by anyone who calls the API directly.",
+ fix:"Enforce <code>status = published</code> server-side on all unauthenticated content reads, rather than trusting clients to filter.",conf:1},
+{id:30,sev:"P3",url:CMS+"/category/shortvideos",repro:"Create a record in Short Videos, Vachanam, Categories, Contacts or Daanam (the Save-button collections), then check <code>GET /api/v1/content/&lt;collection&gt;</code>.",
+ what:"These five collections have no draft/publish workflow — just Save. The save returns <code>201</code> and the record appears in the CMS list, but it <strong>never appears on the public content API</strong>, and there is no Publish action to promote it. There appears to be no path for an editor to make this content live.",
+ fix:"Define the publish semantics for status-less collections: either auto-publish on save (and make the public API return them) or give them the same Draft/Publish workflow as the other collections.",conf:1}
+];
+
+const BANDS=[
+ {sev:"P1",tone:"var(--p1)",title:"P1 — Blocker",blurb:"An editor cannot do their job until these are fixed."},
+ {sev:"P2",tone:"var(--p2)",title:"P2 — High",blurb:"Broken, misleading, or leaking across environments."},
+ {sev:"P3",tone:"var(--p3)",title:"P3 — Medium",blurb:"Correctness, labelling and workflow friction."},
+ {sev:"P4",tone:"var(--p4)",title:"P4 — Low",blurb:"Cosmetic and naming consistency."}
+];
+
+const KEY="mp-cms-qa-ticks-v1";
+let ticks={}; try{ticks=JSON.parse(localStorage.getItem(KEY)||"{}");}catch(e){ticks={};}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(ticks));}catch(e){}};
+
+document.getElementById("bands").innerHTML=BANDS.map(b=>{
+  const rows=F.filter(f=>f.sev===b.sev);
+  return `<section class="band" data-band="${b.sev}">
+    <h2><span class="dot" style="--tone:${b.tone}"></span>${b.title}<span class="cnt">${rows.length} findings</span></h2>
+    <p class="blurb">${b.blurb}</p>
+    <div class="scroller"><table>
+      <thead><tr><th class="c-chk">✓</th><th class="c-id">#</th><th class="c-loc">Where to look</th><th class="c-what">What's wrong</th><th class="c-fix">Suggested fix</th></tr></thead>
+      <tbody>${rows.map(f=>`
+        <tr id="f${f.id}" data-id="${f.id}" data-sev="${f.sev}">
+          <td class="c-chk"><input type="checkbox" data-tick="${f.id}" ${ticks[f.id]?"checked":""} aria-label="Mark finding ${f.id} verified"></td>
+          <td class="c-id"><a class="idtag" style="--tone:${b.tone}" href="#f${f.id}">${f.id}</a></td>
+          <td class="c-loc"><a class="url" href="${f.url}" target="_blank" rel="noopener">${f.url.replace(/^https:\/\//,"")}</a><span class="repro">${f.repro}</span></td>
+          <td class="c-what">${f.what}<span class="conf ${f.conf?"y":"n"}">${f.conf?"Confirmed":"Needs check"}</span></td>
+          <td class="c-fix">${f.fix}</td>
+        </tr>`).join("")}
+      </tbody></table></div></section>`;
+}).join("");
+
+const prog=document.getElementById("prog");
+function paint(){
+  const n=F.filter(f=>ticks[f.id]).length;
+  prog.innerHTML=`<b>${n}</b> / ${F.length} verified`;
+  F.forEach(f=>{const tr=document.querySelector(`tr[data-id="${f.id}"]`); if(tr) tr.classList.toggle("done",!!ticks[f.id]);});
+}
+paint();
+document.addEventListener("change",e=>{
+  const id=e.target.dataset&&e.target.dataset.tick; if(!id) return;
+  if(e.target.checked) ticks[id]=1; else delete ticks[id];
+  save(); paint(); applyFilter();
+});
+document.getElementById("reset").addEventListener("click",()=>{
+  ticks={}; save();
+  document.querySelectorAll("input[data-tick]").forEach(c=>c.checked=false);
+  paint(); applyFilter();
+});
+const activeSev=new Set();
+document.getElementById("chips").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b) return;
+  const s=b.dataset.sev;
+  if(activeSev.has(s)) activeSev.delete(s); else activeSev.add(s);
+  b.setAttribute("aria-pressed",activeSev.has(s)?"true":"false");
+  applyFilter();
+});
+const q=document.getElementById("q");
+q.addEventListener("input",applyFilter);
+function applyFilter(){
+  const term=q.value.trim().toLowerCase();
+  const sevs=[...activeSev].filter(s=>s!=="unchecked");
+  const openOnly=activeSev.has("unchecked");
+  let shown=0;
+  F.forEach(f=>{
+    const tr=document.querySelector(`tr[data-id="${f.id}"]`); if(!tr) return;
+    const hay=(f.url+" "+f.repro+" "+f.what+" "+f.fix+" "+f.sev).toLowerCase();
+    const vis=(!sevs.length||sevs.includes(f.sev)) && (!openOnly||!ticks[f.id]) && (!term||hay.indexOf(term)!==-1);
+    tr.hidden=!vis; if(vis) shown++;
+  });
+  document.querySelectorAll("section[data-band]").forEach(sec=>{
+    sec.hidden=![...sec.querySelectorAll("tbody tr")].some(tr=>!tr.hidden);
+  });
+  document.getElementById("empty").style.display=shown?"none":"block";
+}
+</script>
+</body>
+</html>

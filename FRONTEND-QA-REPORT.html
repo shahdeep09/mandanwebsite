@@ -1,0 +1,601 @@
+<title>Mandan Parivar — Frontend QA Report</title>
+<style>
+  /* ---------- tokens: light (bare :root = complete palette) ---------- */
+  :root{
+    --ground:#FAF8F5;
+    --surface:#FFFFFF;
+    --surface-2:#F3F0EA;
+    --ink:#1B1815;
+    --ink-2:#4A443D;
+    --muted:#7A736A;
+    --rule:#E3DED4;
+    --rule-strong:#CFC7B9;
+    --accent:#155E6B;
+    --accent-soft:#E2F0F2;
+    --p1:#A32118;
+    --p1-soft:#FBE9E7;
+    --p2:#96590A;
+    --p2-soft:#FBF0DC;
+    --p3:#2F5B93;
+    --p3-soft:#E8EFF8;
+    --p4:#6B655C;
+    --p4-soft:#EFECE6;
+    --ok:#2E6B44;
+    --ok-soft:#E5F0E8;
+    --shadow:0 1px 2px rgba(27,24,21,.05), 0 8px 24px -12px rgba(27,24,21,.18);
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  /* ---------- tokens: dark via OS, unless an explicit light choice ---------- */
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#131110;
+      --surface:#1C1917;
+      --surface-2:#24201D;
+      --ink:#F2EDE6;
+      --ink-2:#CFC7BC;
+      --muted:#968D82;
+      --rule:#312B26;
+      --rule-strong:#463E37;
+      --accent:#5FBECD;
+      --accent-soft:#11333A;
+      --p1:#F0897E;
+      --p1-soft:#391916;
+      --p2:#E0A54B;
+      --p2-soft:#372711;
+      --p3:#89B2E6;
+      --p3-soft:#17273B;
+      --p4:#A79E92;
+      --p4-soft:#2A2621;
+      --ok:#7FC298;
+      --ok-soft:#16301F;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    }
+  }
+  /* ---------- tokens: dark via explicit toggle ---------- */
+  :root[data-theme="dark"]{
+    --ground:#131110; --surface:#1C1917; --surface-2:#24201D;
+    --ink:#F2EDE6; --ink-2:#CFC7BC; --muted:#968D82;
+    --rule:#312B26; --rule-strong:#463E37;
+    --accent:#5FBECD; --accent-soft:#11333A;
+    --p1:#F0897E; --p1-soft:#391916;
+    --p2:#E0A54B; --p2-soft:#372711;
+    --p3:#89B2E6; --p3-soft:#17273B;
+    --p4:#A79E92; --p4-soft:#2A2621;
+    --ok:#7FC298; --ok-soft:#16301F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px; margin:0 auto; padding:0 24px 96px}
+
+  /* ---------- masthead ---------- */
+  header.masthead{border-bottom:1px solid var(--rule); background:var(--surface)}
+  .masthead .wrap{padding-top:40px; padding-bottom:28px}
+  .eyebrow{
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--accent); margin:0 0 14px;
+  }
+  h1{
+    font-family:var(--serif); font-weight:600; font-size:clamp(30px,4.2vw,46px);
+    line-height:1.1; letter-spacing:-.015em; margin:0 0 6px; text-wrap:balance;
+  }
+  .sub{font-size:17px; color:var(--ink-2); margin:0 0 26px; max-width:62ch}
+  .sub a{color:var(--accent)}
+  .meta{
+    display:grid; gap:1px; background:var(--rule);
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    border:1px solid var(--rule); border-radius:8px; overflow:hidden;
+  }
+  .meta div{background:var(--surface); padding:11px 14px}
+  .meta dt{
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--muted); margin:0 0 3px;
+  }
+  .meta dd{margin:0; font-size:14px; color:var(--ink)}
+
+  /* ---------- caveat ---------- */
+  .caveat{
+    margin:32px 0 0; border:1px solid var(--rule-strong); border-left:3px solid var(--p2);
+    background:var(--surface); border-radius:6px; padding:18px 22px;
+  }
+  .caveat h2{
+    font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--p2); margin:0 0 10px; font-weight:600;
+  }
+  .caveat ol{margin:0; padding-left:20px}
+  .caveat li{margin:0 0 8px; color:var(--ink-2); font-size:15px}
+  .caveat li:last-child{margin-bottom:0}
+  .caveat strong{color:var(--ink)}
+
+  /* ---------- summary tiles ---------- */
+  .tiles{
+    display:grid; gap:12px; margin:34px 0 8px;
+    grid-template-columns:repeat(auto-fit,minmax(132px,1fr));
+  }
+  .tile{
+    background:var(--surface); border:1px solid var(--rule); border-radius:8px;
+    padding:14px 16px; position:relative; overflow:hidden;
+  }
+  .tile::before{content:""; position:absolute; inset:0 auto 0 0; width:3px; background:var(--tone,var(--rule-strong))}
+  .tile .n{
+    font-family:var(--serif); font-size:32px; line-height:1; font-variant-numeric:tabular-nums;
+    color:var(--tone,var(--ink)); display:block; margin-bottom:5px;
+  }
+  .tile .l{font-size:12.5px; color:var(--muted); line-height:1.35}
+  .tile .l b{display:block; color:var(--ink-2); font-weight:600; font-size:13px}
+
+  /* ---------- controls ---------- */
+  .controls{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+    margin:28px 0 18px; padding:14px 16px;
+    background:var(--surface); border:1px solid var(--rule); border-radius:8px;
+    position:sticky; top:0; z-index:20; box-shadow:var(--shadow);
+  }
+  .controls input[type=search]{
+    flex:1 1 210px; min-width:0; padding:8px 11px; font:inherit; font-size:14px;
+    color:var(--ink); background:var(--ground);
+    border:1px solid var(--rule-strong); border-radius:6px;
+  }
+  .controls input[type=search]::placeholder{color:var(--muted)}
+  .chips{display:flex; flex-wrap:wrap; gap:6px}
+  .chip{
+    font:inherit; font-size:12.5px; font-weight:600; cursor:pointer;
+    padding:6px 12px; border-radius:999px; background:var(--surface-2);
+    color:var(--ink-2); border:1px solid var(--rule-strong);
+  }
+  .chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--surface)}
+  :root[data-theme="dark"] .chip[aria-pressed="true"],
+  .chip[aria-pressed="true"]{color:#fff}
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]) .chip[aria-pressed="true"]{color:#0F1416}
+  }
+  :root[data-theme="dark"] .chip[aria-pressed="true"]{color:#0F1416}
+  .progress{
+    margin-left:auto; font-family:var(--mono); font-size:12px; color:var(--muted);
+    font-variant-numeric:tabular-nums; white-space:nowrap;
+  }
+  .progress b{color:var(--ok)}
+  .ghost{
+    font:inherit; font-size:12.5px; cursor:pointer; padding:6px 11px; border-radius:6px;
+    background:transparent; color:var(--muted); border:1px solid var(--rule-strong);
+  }
+  .chip:focus-visible,.ghost:focus-visible,input:focus-visible,summary:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
+  }
+
+  /* ---------- sections ---------- */
+  section.band{margin:38px 0 0}
+  .band > h2{
+    font-family:var(--serif); font-size:23px; font-weight:600; letter-spacing:-.01em;
+    margin:0 0 4px; display:flex; align-items:baseline; gap:11px;
+  }
+  .band > h2 .dot{width:9px; height:9px; border-radius:50%; background:var(--tone); flex:none}
+  .band > h2 .cnt{font-family:var(--mono); font-size:12px; color:var(--muted); font-weight:400}
+  .band > p.blurb{margin:0 0 16px; color:var(--muted); font-size:14.5px; max-width:70ch}
+
+  /* ---------- findings table ---------- */
+  .scroller{overflow-x:auto; border:1px solid var(--rule); border-radius:8px; background:var(--surface)}
+  table{border-collapse:collapse; width:100%; min-width:940px}
+  thead th{
+    text-align:left; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--muted); font-weight:600;
+    padding:11px 14px; border-bottom:1px solid var(--rule-strong); background:var(--surface-2);
+    position:sticky; top:0;
+  }
+  tbody td{padding:15px 14px; border-bottom:1px solid var(--rule); vertical-align:top; font-size:14.5px; color:var(--ink-2)}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr.done td{opacity:.42}
+  tbody tr:target{background:var(--accent-soft)}
+  .c-id{width:52px; white-space:nowrap}
+  .c-chk{width:40px}
+  .c-loc{width:24%}
+  .c-what{width:31%}
+  .c-fix{width:31%}
+  .idtag{
+    font-family:var(--mono); font-size:12px; font-weight:600; color:var(--tone);
+    border:1px solid var(--tone); border-radius:5px; padding:2px 6px; display:inline-block;
+    text-decoration:none;
+  }
+  input[type=checkbox]{width:17px; height:17px; accent-color:var(--ok); cursor:pointer; margin-top:2px}
+  .url{
+    font-family:var(--mono); font-size:12.5px; color:var(--accent); word-break:break-all;
+    display:inline-block; margin-bottom:6px;
+  }
+  .url:hover{text-decoration:underline}
+  .repro{display:block; color:var(--muted); font-size:13px; line-height:1.5}
+  td.c-what strong{color:var(--ink); font-weight:600}
+  code{
+    font-family:var(--mono); font-size:12.5px; background:var(--surface-2);
+    border:1px solid var(--rule); border-radius:4px; padding:1px 4px; word-break:break-all;
+  }
+  .conf{
+    display:inline-block; margin-top:9px; font-family:var(--mono); font-size:10.5px;
+    letter-spacing:.06em; text-transform:uppercase; padding:2px 7px; border-radius:4px;
+  }
+  .conf.y{background:var(--ok-soft); color:var(--ok)}
+  .conf.n{background:var(--p2-soft); color:var(--p2)}
+
+  /* ---------- closing blocks ---------- */
+  .cols{display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); margin-top:16px}
+  .panel{background:var(--surface); border:1px solid var(--rule); border-radius:8px; padding:20px 22px}
+  .panel h3{
+    font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+    margin:0 0 12px; color:var(--muted); font-weight:600;
+  }
+  .panel ul{margin:0; padding-left:18px}
+  .panel li{margin-bottom:9px; font-size:14.5px; color:var(--ink-2)}
+  .panel li:last-child{margin-bottom:0}
+  .panel li b{color:var(--ink)}
+  .panel.good{border-left:3px solid var(--ok)}
+  .panel.gap{border-left:3px solid var(--muted)}
+
+  ol.order{counter-reset:o; list-style:none; padding:0; margin:16px 0 0; display:grid; gap:10px}
+  ol.order li{
+    counter-increment:o; background:var(--surface); border:1px solid var(--rule);
+    border-radius:8px; padding:14px 18px 14px 52px; position:relative; font-size:14.5px; color:var(--ink-2);
+  }
+  ol.order li::before{
+    content:counter(o); position:absolute; left:16px; top:13px;
+    font-family:var(--mono); font-size:12px; font-weight:600; color:var(--surface);
+    background:var(--accent); width:21px; height:21px; border-radius:50%;
+    display:grid; place-items:center;
+  }
+  ol.order li b{color:var(--ink)}
+
+  footer.foot{margin-top:52px; padding-top:20px; border-top:1px solid var(--rule); color:var(--muted); font-size:13px}
+
+  .empty{padding:36px; text-align:center; color:var(--muted); font-size:15px; display:none}
+
+  @media (max-width:640px){
+    .wrap{padding:0 16px 64px}
+    .controls{position:static}
+    .progress{margin-left:0; width:100%}
+  }
+  @media print{
+    .controls{display:none}
+    tbody tr{break-inside:avoid}
+    .scroller{overflow:visible; border:0}
+    table{min-width:0}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+
+<header class="masthead">
+  <div class="wrap">
+    <p class="eyebrow">Frontend QA · Black-box test · 7 August 2026</p>
+    <h1>Mandan Parivar — Frontend Test Report</h1>
+    <p class="sub">
+      35 findings against the live site at <a href="https://mandanparivar.com/">mandanparivar.com</a>,
+      each with the URL to open, where the defect sits, and a suggested fix. Tick items off as you verify them —
+      your progress is saved in this browser.
+    </p>
+    <dl class="meta">
+      <div><dt>Build</dt><dd>mp_frontend 3.3.4 (23)</dd></div>
+      <div><dt>Stack</dt><dd>Flutter Web · CanvasKit</dd></div>
+      <div><dt>Viewports</dt><dd>1440×900 · 390×844</dd></div>
+      <div><dt>Routes checked</dt><dd>23</dd></div>
+      <div><dt>Session</dt><dd>Signed out</dd></div>
+    </dl>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="caveat">
+    <h2>Read this before acting on the report</h2>
+    <ol>
+      <li><strong>Rendering was software, not GPU.</strong> The test browser fell back to SwiftShader, where CanvasKit paints far slower than on a real machine. <strong>Every timing figure here is worst-case, not what your users see.</strong> What rendered is reliable; how long it took is inflated.</li>
+      <li><strong>Payload sizes, HTTP headers, API content and typos are exact.</strong> Those were read from direct requests rather than the browser, so they are unaffected by the above.</li>
+    </ol>
+  </div>
+
+  <div class="tiles">
+    <div class="tile" style="--tone:var(--p1)"><span class="n">4</span><span class="l"><b>P1 Critical</b>Blocks or badly damages the visit</span></div>
+    <div class="tile" style="--tone:var(--p2)"><span class="n">10</span><span class="l"><b>P2 High</b>Visible breakage or major cost</span></div>
+    <div class="tile" style="--tone:var(--p3)"><span class="n">16</span><span class="l"><b>P3 Medium</b>Content, polish, correctness</span></div>
+    <div class="tile" style="--tone:var(--p4)"><span class="n">5</span><span class="l"><b>P4 Low</b>Cosmetic</span></div>
+    <div class="tile" style="--tone:var(--ok)"><span class="n">34</span><span class="l"><b>Confirmed</b>Reproduced or read from source</span></div>
+  </div>
+
+  <div class="controls">
+    <input type="search" id="q" placeholder="Search findings, URLs, fixes…" aria-label="Search findings">
+    <div class="chips" id="chips">
+      <button class="chip" data-sev="P1" aria-pressed="false">P1</button>
+      <button class="chip" data-sev="P2" aria-pressed="false">P2</button>
+      <button class="chip" data-sev="P3" aria-pressed="false">P3</button>
+      <button class="chip" data-sev="P4" aria-pressed="false">P4</button>
+      <button class="chip" data-sev="unchecked" aria-pressed="false">Open only</button>
+    </div>
+    <button class="ghost" id="reset">Reset ticks</button>
+    <span class="progress" id="prog"></span>
+  </div>
+
+  <div id="bands"></div>
+  <p class="empty" id="empty">Nothing matches that filter.</p>
+
+  <section class="band">
+    <h2><span class="dot" style="--tone:var(--ok)"></span>Verified working</h2>
+    <p class="blurb">Recorded so it isn't re-tested.</p>
+    <div class="cols">
+      <div class="panel good">
+        <h3>Navigation &amp; routing</h3>
+        <ul>
+          <li><b>Header nav</b> — शाला → <code>/shala/pravachanam</code>, सेवा → <code>/seva</code>, दानम् → <code>/danam</code>, संवाद → <code>/samvad</code>, Signup/Login → <code>/profile</code>. All fire correctly.</li>
+          <li><b>Content cards</b> — a Pravachanam card routes to <code>/shala/pravachanam/4/1</code>; the URL updates, so routing and browser history work.</li>
+          <li><b>Footer links</b> — Contact Us and Privacy Policy both navigate correctly from inside the app.</li>
+          <li><b>404 screen</b> — unknown routes show a proper "Page not found" with a working "Go to Home" (HTTP status is still wrong — see 8).</li>
+        </ul>
+      </div>
+      <div class="panel good">
+        <h3>Rendering &amp; backend</h3>
+        <ul>
+          <li><b>Hero carousel</b> — autoplays; both arrows advance and reverse correctly.</li>
+          <li><b>Legal pages</b> — <code>/return-refund-policy</code> and <code>/shipping-delivery-policy</code> render on direct load.</li>
+          <li><b>Mobile layout</b> — below the hero, sections reflow sensibly at 390&nbsp;px with no horizontal overflow.</li>
+          <li><b>APIs</b> — <code>hero-section</code>, <code>dashboard</code> and <code>app-settings</code> all returned 200 with valid payloads. No 4xx or 5xx anywhere across 23 routes.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <h2><span class="dot" style="--tone:var(--muted)"></span>Not covered</h2>
+    <div class="cols">
+      <div class="panel gap">
+        <h3>Needs a test account</h3>
+        <ul><li>Profile, bookmarks and collections, cart, checkout, payment callbacks, notifications.</li></ul>
+      </div>
+      <div class="panel gap">
+        <h3>Out of scope this pass</h3>
+        <ul>
+          <li>Hindi and Gujarati (<code>?lang=hi</code>, <code>?lang=gu</code>) — English only.</li>
+          <li>Safari and iOS — Chromium only here. Given the CanvasKit + wasm stack, iOS Safari deserves its own manual pass.</li>
+          <li>Tablet breakpoint (~768&nbsp;px), keyboard-only navigation, and contrast measurement beyond the hero.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <h2><span class="dot" style="--tone:var(--accent)"></span>Suggested order of work</h2>
+    <ol class="order">
+      <li><b>1 and 2</b> — pages that render blank. Nothing else matters if a shared link opens to nothing.</li>
+      <li><b>3</b> — get production off the dev image host before it bites.</li>
+      <li><b>9 and 10</b> — caching and payload. The cheapest large win for real users on mobile data.</li>
+      <li><b>5, 6, 11, 12</b> — the visible breakages: tofu text, stuck skeletons, unreadable mobile hero, header collision.</li>
+      <li><b>15–18, 26, 27</b> — content and copy fixes; minutes of CMS work each.</li>
+      <li><b>13, 14, 28</b> — SEO, if search traffic matters to you.</li>
+    </ol>
+  </section>
+
+  <footer class="foot">
+    Tested with Playwright 1.56 driving Chromium against the live site. Elements were located through the Flutter
+    semantics tree and clicked by coordinate, then verified from screenshots — CanvasKit renders to a single
+    <code>&lt;canvas&gt;</code>, so no DOM selectors are available. Ticks are stored locally in this browser only.
+  </footer>
+</div>
+
+<script>
+const F = [
+ {id:1,sev:"P1",url:"https://mandanparivar.com/short-videos",repro:"Paste the URL straight into a fresh tab — do <em>not</em> click through from the homepage.",
+  what:"Renders <strong>completely blank</strong> — no header, no footer, nothing. Five uncaught JS errors on one run; on a second run it stalled after Firebase init and never called its content API at all. Zero accessibility nodes, so the screen was never built — this is not a paint delay.",
+  fix:"Reproduce with DevTools open and read the Dart stack. Likely an unguarded null or parse failure in the Short Videos screen's init that throws before first build. Wrap the screen's data load in try/catch with an error state, and add a global <code>ErrorWidget.builder</code> so a screen-level crash shows a retry UI instead of blank canvas.",conf:1},
+ {id:2,sev:"P1",url:"https://mandanparivar.com/contact-us",extra:["https://mandanparivar.com/search","https://mandanparivar.com/privacy-policy","https://mandanparivar.com/terms-conditions"],
+  repro:"Open each URL <em>directly</em> in a new tab. Then load the homepage and reach the same page by clicking the footer link — compare.",
+  what:"On direct load these rendered nothing within ~20s. Reached by clicking inside the app the <strong>same</strong> routes render fine (<code>/contact-us</code> → 22 nodes, <code>/privacy-policy</code> → 51). So deep links are the broken path — that's every Google result, every WhatsApp share, every bookmark.",
+  fix:"Check the router's initial-route handling: state the screen depends on (app-settings, i18n, auth bootstrap) is probably resolved on the home screen only, so a cold start on a deep route waits forever. Make each screen fetch its own prerequisites, and add a load timeout with a visible error and retry.",conf:0},
+ {id:3,sev:"P1",url:"https://data.prodapi.mandanparivar.com/api/v1/hero-section",repro:"Homepage hero carousel; also visible directly in this API response.",
+  what:"<strong>Production is serving hero banners from the dev/staging file host.</strong> All three slides point at <code>files.devapi.mandanparivar.com</code> — every other image on the site correctly uses <code>files.prodapi</code>. If dev is ever cleaned or taken down, the homepage hero breaks.",
+  fix:"Re-upload the three banners to <code>files.prodapi.mandanparivar.com</code> and update <code>thumbnailUrl</code> on hero rows 11, 10 and 8. Then add a CI or CMS validation that rejects any <code>devapi</code> URL in production content.",conf:1},
+ {id:4,sev:"P1",url:"https://mandanparivar.com/",repro:"Hard-reload with cache disabled and watch the screen.",
+  what:"After the branded loader clears (~1.5s) the user gets a <strong>plain colour gradient with no spinner, no skeleton and no text</strong> until content appears. Nothing signals that the site is still working.",
+  fix:"Keep the branded Lottie loader on screen until first meaningful paint instead of dismissing it early, or render a skeleton immediately. Fixing 10 shortens the window; this fixes the perception either way.",conf:1},
+
+ {id:5,sev:"P2",url:"https://mandanparivar.com/shala/gaanam",extra:["https://mandanparivar.com/shala/pathanam"],repro:"Look at the top navigation pill on any <code>/shala/*</code> page.",
+  what:"Devanagari nav labels render as <strong>empty tofu boxes</strong> (▯▯▯▯) instead of शाला / शोभा / सेवा / दानम् / संवाद. The same labels render fine on the homepage. <strong>Root cause:</strong> <code>assets/FontManifest.json</code> bundles only MaterialIcons and CupertinoIcons — every Indic glyph is fetched at runtime from <code>fonts.gstatic.com</code> (7 TTFs, ~1.8&nbsp;MB). When that fetch is slow, text paints with no font and Flutter never re-lays-out.",
+  fix:"Bundle the Devanagari and Gujarati fonts as local assets in <code>pubspec.yaml</code> instead of runtime <code>google_fonts</code>. Removes the tofu <em>and</em> ~1.8&nbsp;MB of blocking network. If runtime fetch must stay, await <code>GoogleFonts.pendingFonts()</code> before first paint.",conf:1},
+ {id:6,sev:"P2",url:"https://mandanparivar.com/shobha",repro:"Open Mandan Shobha and wait.",
+  what:"Grey <strong>skeleton cards never resolve into content</strong> — the events list stays empty, then a large blank band, then the footer. The event data does exist (it is present in the accessibility tree), so the cards are failing to paint.",
+  fix:"Check the Shobha events list for an image or layout exception being swallowed per card. Add an explicit empty and error state so a failed load says so rather than showing skeletons indefinitely.",conf:1},
+ {id:7,sev:"P2",url:"https://mandanparivar.com/checkout.js",repro:"Open that URL, or open DevTools → Console on any page.",
+  what:"<code>index.html</code> contains <code>&lt;script src=\"checkout.js\"&gt;</code> but <strong>the file does not exist</strong>. The server answers 200 with the homepage HTML, so the browser parses HTML as JavaScript and throws a syntax error on <strong>every page load</strong>.",
+  fix:"Either restore <code>checkout.js</code> or delete the script tag from <code>index.html</code>. See also 8 — the soft-404 is what turns a missing file into a confusing parse error.",conf:1},
+ {id:8,sev:"P2",url:"https://mandanparivar.com/nonexistent-page-xyz",repro:"<code>curl -I</code> any URL that doesn't exist.",
+  what:"Every unknown path returns <strong>HTTP 200</strong> with the app shell. The app then draws a correct \"Page not found\" screen, but search engines see 200 OK and will index unlimited junk URLs. It also masks missing assets (see 7).",
+  fix:"Serve a real 404 status for unmatched paths, or at minimum exclude them via <code>robots.txt</code> plus a <code>noindex</code> meta on the not-found state. Keep the SPA fallback only for known route prefixes.",conf:1},
+ {id:9,sev:"P2",url:"https://mandanparivar.com/main.dart.js",repro:"<code>curl -sI https://mandanparivar.com/main.dart.js | grep -i cache</code>",
+  what:"The <strong>5.7&nbsp;MB</strong> app bundle is served <code>cache-control: no-cache</code>, so the browser must revalidate on <em>every</em> visit before it may reuse it. Same for <code>AssetManifest.bin.json</code>.",
+  fix:"Give build outputs hashed filenames and serve them <code>public, max-age=31536000, immutable</code>. Keep <code>no-cache</code> for <code>index.html</code> only. This is the single biggest win for repeat visitors.",conf:1},
+ {id:10,sev:"P2",url:"https://mandanparivar.com/",repro:"DevTools → Network, disable cache, reload.",
+  what:"The homepage pulls <strong>~19&nbsp;MB</strong> before it is usable: <code>main.dart.js</code> 5.7&nbsp;MB, <code>canvaskit.wasm</code> 5.6&nbsp;MB, <strong><code>pdfium.wasm</code> 3.9&nbsp;MB</strong>, <strong><code>rive_native.wasm</code> 2.7&nbsp;MB</strong>, plus ~1.8&nbsp;MB of runtime fonts. PDFium and Rive download on the homepage even though nothing there shows a PDF.",
+  fix:"Lazy-load pdfrx/PDFium only on screens that open a PDF and Rive only where an animation plays, via deferred imports. Bundle fonts locally (see 5). Consider skwasm or a trimmed CanvasKit. Realistic target: under 3&nbsp;MB to first paint.",conf:1},
+ {id:11,sev:"P2",url:"https://mandanparivar.com/",repro:"Load on a phone (390&nbsp;px) and look at the \"360° Virtual Tour\" hero slide.",
+  what:"The pink-on-light headline is <strong>very close to unreadable</strong> — well below WCAG AA contrast. The desktop crop hides this; the mobile crop puts the text over the brightest part of the photo.",
+  fix:"Add a dark scrim behind hero text (e.g. <code>rgba(0,0,0,.45)</code>) or bake a darkened band into the banner. Verify ≥4.5:1 against the <em>lightest</em> pixel the text can land on.",conf:1},
+ {id:12,sev:"P2",url:"https://mandanparivar.com/",repro:"Scroll slowly past the Gyaanam and Vachanam sections, watching the floating header.",
+  what:"The translucent header pill is <strong>not opaque enough</strong>: book covers and quote cards scroll visibly through it and collide with the nav labels, which become illegible over busy artwork.",
+  fix:"Increase the header's background opacity, or add a stronger blur plus a solid tint, so content never reads through it. Simplest robust fix: switch to a solid background once <code>scrollOffset &gt; 0</code>.",conf:1},
+ {id:13,sev:"P2",url:"https://mandanparivar.com/shala/gyanam",repro:"Compare the browser tab title on <code>/</code>, <code>/shala/gyanam</code>, <code>/danam</code> and <code>/contact-us</code>.",
+  what:"<strong>Every page has the identical title \"Mandan Parivar\".</strong> Bookmarks, browser history, tab switching and Google results are all indistinguishable. There is no per-page meta description either.",
+  fix:"Set a route-specific title and description on navigation — e.g. \"Gyaanam — Books &amp; Publications | Mandan Parivar\".",conf:1},
+ {id:14,sev:"P2",url:"https://mandanparivar.com/",repro:"<code>curl -s https://mandanparivar.com/ | grep -c Pravachanam</code> → <code>0</code>",
+  what:"CanvasKit paints into a <strong>single <code>&lt;canvas&gt;</code></strong>: the served HTML contains <strong>zero</strong> body text, links or images. Search engines and WhatsApp/social previews see only the static meta tags — none of your pravachans, books, articles or events are indexable.",
+  fix:"Inherent to CanvasKit. Cheapest first: (a) per-route SSR or prerendered HTML snapshots for content pages; (b) a sitemap plus server-rendered landing pages for articles and books; (c) move content pages to the HTML renderer. At minimum, add a real sitemap (see 28).",conf:1},
+
+ {id:15,sev:"P3",url:"https://mandanparivar.com/",repro:"Hero slide 1 title.",
+  what:"Typo: <strong>\"Vison Jinshasan Action Plan 2026-27\"</strong> — should be <strong>\"Vision\"</strong>. Live on the homepage hero. The same title is spelled correctly on <code>/shala/gyanam</code>.",
+  fix:"Fix <code>title</code> on hero-section row id 11 in the CMS.",conf:1},
+ {id:16,sev:"P3",url:"https://mandanparivar.com/articles",repro:"Read the article card titles, on this page and in \"Latest Articles\" on the homepage.",
+  what:"Internal language tags are exposed to users: <strong>\"(GUJ) If Liberation is our Goal…\"</strong>, <strong>\"(HIN) Guidance on Chandanbala Jain Temple\"</strong>. Five titles affected.",
+  fix:"Move language into a proper <code>language</code> field and render it as a badge or filter, not a title prefix. Strip the existing (GUJ)/(HIN)/(ENG) prefixes from stored titles.",conf:1},
+ {id:17,sev:"P3",url:"https://mandanparivar.com/shobha",repro:"First event card, end of the venue line.",
+  what:"Placeholder junk in live content: <em>\"Parinati Parva Updhan 2025 — Shri Mahavirdham Jain Tirth, Shirsad <strong>abc</strong>\"</em>.",
+  fix:"Remove <code>abc</code> from that event's venue field, and add a CMS check for stub values before publish.",conf:1},
+ {id:18,sev:"P3",url:"https://mandanparivar.com/",repro:"Gyaanam book carousel on the homepage.",
+  what:"A book is titled <strong>\"VJAP_11 Jainism for the New Gen\"</strong> — an internal code leaking into a user-facing title.",
+  fix:"Rename to the display title and keep <code>VJAP_11</code> in an internal reference field.",conf:1},
+ {id:19,sev:"P3",url:"https://mandanparivar.com/samvad",extra:["https://mandanparivar.com/shala/pathanam"],repro:"Click MANDAN संवाद in the top nav; then the Pathanam tab under Shala.",
+  what:"Both are <strong>\"Coming soon\"</strong> empty pages — yet both are promoted as primary navigation. One of five top-level nav items and one of six Shala tabs are dead ends.",
+  fix:"Hide them, or visibly disable them with a \"Coming soon\" badge that isn't clickable, until content ships — so the nav doesn't promise what isn't there.",conf:1},
+ {id:20,sev:"P3",url:"https://mandanparivar.com/live-updates",repro:"Open the URL.",
+  what:"The route exists in the app's route table but renders <strong>\"Page not found\"</strong>.",fix:"Either implement it or remove the route so it can't be linked.",conf:1},
+ {id:21,sev:"P3",url:"https://mandanparivar.com/",repro:"Click the hero ▶/◀ arrows quickly, or watch autoplay advance.",
+  what:"While a banner loads the hero shows a <strong>broken-image placeholder icon</strong> and a grey bar where the title goes. It reads as \"this site is broken\" rather than \"loading\". Banners are 113–224&nbsp;KB and are not preloaded.",
+  fix:"Preload the next slide's image, and use a blurred low-res placeholder or the brand gradient instead of the broken-image icon.",conf:1},
+ {id:22,sev:"P3",url:"https://mandanparivar.com/",repro:"Turn on a screen reader, or inspect the Flutter semantics tree.",
+  what:"Many controls have <strong>no accessible name</strong> — hero prev/next arrows, card chevrons, share and bookmark buttons all announce as just \"button\". Fails WCAG 2.1 SC 4.1.2.",
+  fix:"Wrap icon-only buttons in <code>Semantics(label: …)</code> — \"Next slide\", \"Share article\", \"Save to collection\".",conf:1},
+ {id:23,sev:"P3",url:"https://files.prodapi.mandanparivar.com/images/Anekant_Playlist.png",repro:"DevTools → Network → sort by size on the homepage.",
+  what:"Photographic images shipped as <strong>PNG</strong>: this one is <strong>1.26&nbsp;MB</strong>, <code>AGAM AMRUT PRAVACHAN SHRENI 1.png</code> is 388&nbsp;KB. Both are thumbnails a few hundred pixels wide.",
+  fix:"Convert photos to WebP or JPEG and serve responsive sizes via Cloudflare Images or width variants. Should drop roughly 1.5&nbsp;MB from the homepage.",conf:1},
+ {id:24,sev:"P3",url:"https://mandanparivar-udaygirikhandgiri-caves.netlify.app/",repro:"Hero slide 2 \"Explore\" → destination.",
+  what:"The 360° tour links to a <strong>raw Netlify subdomain</strong>. Off-brand, and looks untrustworthy to a cautious visitor.",
+  fix:"Move it to a subdomain you own, e.g. <code>tour.mandanparivar.com</code>.",conf:1},
+ {id:25,sev:"P3",url:"https://mandanparivar.com/",extra:["https://mandanparivar.com/shala/pathanam"],repro:"Scroll to just above the footer.",
+  what:"A <strong>large empty band</strong> (350&nbsp;px+) sits between the last content section and the footer, filled only by a faint \"MANDAN PARIVAR\" watermark. Reads as a section that failed to load.",
+  fix:"Tighten the bottom spacing, or make the watermark band an intentional sized element rather than leftover slack.",conf:1},
+ {id:26,sev:"P3",url:"https://mandanparivar.com/",repro:"Footer.",
+  what:"<strong>\"Contact Us\" appears twice</strong> — once in the link column and once in the bottom legal bar.",fix:"Remove one.",conf:1},
+ {id:27,sev:"P3",url:"https://data.prodapi.mandanparivar.com/api/v1/hero-section",repro:"Hero slide 2 title, and titles in the dashboard feed.",
+  what:"The title is <code>\"Virtual Tour \"</code> with a <strong>trailing space</strong>; four other titles in the dashboard feed contain <strong>double spaces</strong>.",
+  fix:"Trim and collapse whitespace on save in the CMS.",conf:1},
+ {id:28,sev:"P3",url:"https://mandanparivar.com/sitemap.xml",repro:"Open it.",
+  what:"<strong>No sitemap</strong> — it returns the homepage HTML. Combined with 14 (no crawlable text), search engines have almost nothing to index.",
+  fix:"Generate a <code>sitemap.xml</code> covering all content routes and reference it from <code>robots.txt</code>.",conf:1},
+ {id:29,sev:"P3",url:"https://mandanparivar.com/",repro:"<code>curl -sI https://mandanparivar.com/</code>",
+  what:"Missing security headers: <strong>no <code>Content-Security-Policy</code></strong>, <strong>no <code>Strict-Transport-Security</code></strong>, <strong>no <code>X-Frame-Options</code></strong> (the site can be framed → clickjacking). <code>X-Content-Type-Options</code>, <code>Referrer-Policy</code> and <code>Permissions-Policy</code> are correctly set.",
+  fix:"Add via Cloudflare Transform Rules: <code>Strict-Transport-Security: max-age=31536000; includeSubDomains</code>, <code>X-Frame-Options: SAMEORIGIN</code>, and a CSP starting in report-only.",conf:1},
+ {id:30,sev:"P3",url:"https://mandanparivar.com/",repro:"Load on a phone and view the \"Vision Jinshasan\" slide.",
+  what:"Landscape banners are letterboxed into a tall mobile hero, leaving <strong>large empty margins</strong> above and below the artwork, with the ◀ ▶ arrows sitting on top of the image.",
+  fix:"Supply a portrait crop per banner (a <code>thumbnailUrlMobile</code> field), or use <code>BoxFit.cover</code> with a defined mobile aspect ratio.",conf:1},
+
+ {id:31,sev:"P4",url:"https://mandanparivar.com/",repro:"DevTools → Console, any page.",
+  what:"Recurring <code>Failed to load resource: net::ERR_INVALID_URL</code> — something requests a malformed or empty URL, most likely an image with a null src. Harmless today, but it hides real errors.",
+  fix:"Find the empty URL and guard it; skip the network call when the field is blank.",conf:1},
+ {id:32,sev:"P4",url:"https://mandanparivar.com/shala/gaanam",repro:"Look closely at the six section tabs.",
+  what:"Each tab label has a <strong>stray underscore-like mark before and after</strong> it — <code>‾Pravachanam‾</code>, <code>‾Gyaanam‾</code>. Looks like a broken underline or literal underscore characters.",
+  fix:"Inspect the tab label widget for a <code>TextDecoration.underline</code> on a padded or empty span, or a literal <code>_</code> in the string.",conf:1},
+ {id:33,sev:"P4",url:"https://mandanparivar.com/samvad",repro:"Look at the \"Coming soon\" text.",
+  what:"Not horizontally centred — it sits about 40&nbsp;px right of centre on a 1440&nbsp;px viewport.",fix:"Centre the placeholder.",conf:1},
+ {id:34,sev:"P4",url:"https://mandanparivar.com/",repro:"Hero slide 3 with the site language set to English.",
+  what:"The English headline \"LISTEN PAUSE REFLECT\" is paired with a <strong>Gujarati</strong> subtitle while <code>lang=en</code>. Confusing for an English-preferring visitor.",
+  fix:"Provide per-language banner variants, or keep the whole slide in one language.",conf:1},
+ {id:35,sev:"P4",url:"https://mandanparivar.com/contact-us",repro:"Contact section.",
+  what:"The public contact address is a personal-style Gmail: <code>mandanparivar2023@gmail.com</code>.",
+  fix:"Consider <code>contact@mandanparivar.com</code> for credibility.",conf:1}
+];
+
+const BANDS = [
+  {sev:"P1", tone:"var(--p1)", title:"P1 — Critical", blurb:"Blocks the visit or badly damages it. Fix these first."},
+  {sev:"P2", tone:"var(--p2)", title:"P2 — High", blurb:"Visible breakage, or a large ongoing cost to every visitor."},
+  {sev:"P3", tone:"var(--p3)", title:"P3 — Medium", blurb:"Content errors, correctness and polish. Most are minutes of work."},
+  {sev:"P4", tone:"var(--p4)", title:"P4 — Low", blurb:"Cosmetic. Worth a pass once the rest is clear."}
+];
+
+const KEY = "mp-qa-ticks-v1";
+let ticks = {};
+try{ ticks = JSON.parse(localStorage.getItem(KEY) || "{}"); }catch(e){ ticks = {}; }
+const save = () => { try{ localStorage.setItem(KEY, JSON.stringify(ticks)); }catch(e){} };
+
+const esc = s => String(s).replace(/&(?![a-z#]+;)/g,"&amp;").replace(/</g,"&lt;");
+
+function urlCell(f){
+  const list = [f.url].concat(f.extra || []);
+  return list.map(u => `<a class="url" href="${u}" target="_blank" rel="noopener">${u.replace(/^https:\/\//,"")}</a>`).join("")
+       + `<span class="repro">${f.repro}</span>`;
+}
+
+document.getElementById("bands").innerHTML = BANDS.map(b => {
+  const rows = F.filter(f => f.sev === b.sev);
+  return `<section class="band" data-band="${b.sev}">
+    <h2><span class="dot" style="--tone:${b.tone}"></span>${b.title}<span class="cnt">${rows.length} findings</span></h2>
+    <p class="blurb">${b.blurb}</p>
+    <div class="scroller"><table>
+      <thead><tr>
+        <th class="c-chk"><span aria-label="Verified">✓</span></th>
+        <th class="c-id">#</th>
+        <th class="c-loc">Where to look</th>
+        <th class="c-what">What's wrong</th>
+        <th class="c-fix">Suggested fix</th>
+      </tr></thead>
+      <tbody>${rows.map(f => `
+        <tr id="f${f.id}" data-id="${f.id}" data-sev="${f.sev}">
+          <td class="c-chk"><input type="checkbox" data-tick="${f.id}" ${ticks[f.id]?"checked":""} aria-label="Mark finding ${f.id} verified"></td>
+          <td class="c-id"><a class="idtag" style="--tone:${b.tone}" href="#f${f.id}">${f.id}</a></td>
+          <td class="c-loc">${urlCell(f)}</td>
+          <td class="c-what">${f.what}<span class="conf ${f.conf?"y":"n"}">${f.conf?"Confirmed":"Needs check"}</span></td>
+          <td class="c-fix">${f.fix}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table></div>
+  </section>`;
+}).join("");
+
+const prog = document.getElementById("prog");
+function paintProgress(){
+  const n = F.filter(f => ticks[f.id]).length;
+  prog.innerHTML = `<b>${n}</b> / ${F.length} verified`;
+  F.forEach(f => {
+    const tr = document.querySelector(`tr[data-id="${f.id}"]`);
+    if (tr) tr.classList.toggle("done", !!ticks[f.id]);
+  });
+}
+paintProgress();
+
+document.addEventListener("change", e => {
+  const id = e.target.dataset && e.target.dataset.tick;
+  if (!id) return;
+  if (e.target.checked) ticks[id] = 1; else delete ticks[id];
+  save(); paintProgress(); applyFilter();
+});
+
+document.getElementById("reset").addEventListener("click", () => {
+  ticks = {}; save();
+  document.querySelectorAll("input[data-tick]").forEach(c => c.checked = false);
+  paintProgress(); applyFilter();
+});
+
+const activeSev = new Set();
+document.getElementById("chips").addEventListener("click", e => {
+  const btn = e.target.closest(".chip"); if (!btn) return;
+  const s = btn.dataset.sev;
+  if (activeSev.has(s)) activeSev.delete(s); else activeSev.add(s);
+  btn.setAttribute("aria-pressed", activeSev.has(s) ? "true" : "false");
+  applyFilter();
+});
+
+const q = document.getElementById("q");
+q.addEventListener("input", applyFilter);
+
+function applyFilter(){
+  const term = q.value.trim().toLowerCase();
+  const sevs = [...activeSev].filter(s => s !== "unchecked");
+  const openOnly = activeSev.has("unchecked");
+  let shown = 0;
+
+  F.forEach(f => {
+    const tr = document.querySelector(`tr[data-id="${f.id}"]`);
+    if (!tr) return;
+    const hay = (f.url + " " + (f.extra||[]).join(" ") + " " + f.repro + " " + f.what + " " + f.fix + " " + f.sev).toLowerCase();
+    const okSev  = !sevs.length || sevs.includes(f.sev);
+    const okOpen = !openOnly || !ticks[f.id];
+    const okTerm = !term || hay.indexOf(term) !== -1;
+    const vis = okSev && okOpen && okTerm;
+    tr.hidden = !vis;
+    if (vis) shown++;
+  });
+
+  document.querySelectorAll("section[data-band]").forEach(sec => {
+    const any = [...sec.querySelectorAll("tbody tr")].some(tr => !tr.hidden);
+    sec.hidden = !any;
+  });
+  document.getElementById("empty").style.display = shown ? "none" : "block";
+}
+</script>
